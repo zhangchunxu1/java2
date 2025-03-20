@@ -1,0 +1,151 @@
+<!--<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        h3 {
+            margin: 0 0 10px 0;
+        }
+
+        p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+</body>
+<script>
+    // const xhr = new XMLHttpRequest();
+    // xhr.open('GET', 'http://localhost:8080/user?userId=123', true);
+    // // xhr.setRequestHeader('Content-Type', 'application/json');
+    // xhr.onload = function() {
+    //     if (xhr.status === 200) {
+    //         const response = JSON.parse(xhr.responseText);
+    //         console.log(response);
+    //     }
+    // };
+    // xhr.send();
+    var app = document.getElementById('app');
+    //fetch('http://localhost:8080/user?userId=123&additionalInfo=南师大')
+    // fetch('http://localhost:8080/website?id=2')
+    // fetch('http://localhost:8080/websites')
+    // .then(response => response.text())
+    // .then((data) => {
+    //     const bar = JSON.parse(data);
+    //     bar.data.map(item=>{
+    //         console.log(item)
+    //     })
+    //     app.innerHTML = data;
+    //     // console.log(JSON.parse(data).data[0])
+    // })
+    // .catch(error => console.error('Error:', error));
+    fetch('http://localhost:8080/websites')
+    .then(response => response.text())
+    .then((data) => {
+        const bar = JSON.parse(data);
+        let listItems = '';
+        bar.data.forEach(item => {
+            const name = item.name || '无名网站';
+            const country = item.country || '未知';
+            listItems += `
+                <li>
+                    <h3>${name}</h3>
+                    <p>URL: <a href="${item.url}" target="_blank">${item.url}</a></p>
+                    <p>Alexa 排名: ${item.alexa}</p>
+                    <p>所在国家: ${country}</p>
+                </li>
+            `;
+        });
+        app.innerHTML = `<ul>${listItems}</ul>`;
+    })
+    .catch(error => console.error('Error:', error));
+
+
+</script>
+</html>-->
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网站列表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #fff;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h3 {
+            margin: 0 0 10px;
+            font-size: 1.5em;
+        }
+        p {
+            margin: 5px 0;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+    const app = document.getElementById('app');
+
+    fetch('http://localhost:8080/websites')
+        .then(response => response.text())
+        .then((data) => {
+            const bar = JSON.parse(data);
+            let listItems = '';
+            bar.data.forEach(item => {
+                const name = item.name || '无名网站';
+                const country = item.country || '未知';
+                listItems += `
+                    <li>
+                        <h3>${name}</h3>
+                        <p>URL: <a href="${item.url}" target="_blank">${item.url}</a></p>
+                        <p>Alexa 排名: ${item.alexa}</p>
+                        <p>所在国家: ${country}</p>
+                    </li>
+                `;
+            });
+            app.innerHTML = `<ul>${listItems}</ul>`;
+        })
+        .catch(error => console.error('Error:', error));
+</script>
+
+</body>
+</html>
