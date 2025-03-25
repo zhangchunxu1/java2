@@ -8,6 +8,7 @@
 # https://downloads.mysql.com/archives/get/p/23/file/mysql-8.0.20-winx64.zip
 # 解压-在解压的文件下-创建my.ini 如：D:\111\mysql-8.0.20-winx64\my.ini
 # my.ini 填写的内容如下：注释的内容
+# 创建数据的数据在 这个文件下 datadir=D:\111\mysql-8.0.20-winx64\data
 <!-- [mysqld]
 #ERROR 1045(28000):Access denied for userroot’@’localhost using password: NO) 加skip-grant-tables
 #skip-grant-tables  不需要密码登录 记得把#去掉
