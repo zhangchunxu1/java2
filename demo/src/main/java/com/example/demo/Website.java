@@ -2,16 +2,16 @@ package com.example.demo;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
-
-import jakarta.persistence.Table;
+import javax.persistence.Table;
 
 @Entity
-@Table(name = "websites") // 指定数据库中的正确表名
+@Table(name = "website") // 指定数据库中的正确表名
 
 public class Website {
 
     @Id
     private Integer id;
+
     private String name;
     private String url;
     private int alexa;
