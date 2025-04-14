@@ -1,11 +1,9 @@
 package com.example.demo;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,14 +27,13 @@ public class UserController {
         System.out.println("Received ID: " + id);
         Optional<Website> website = websiteRepository.findById(id);  // 修正拼写错误
         System.out.println("Database Query Result: " + website);
-        return website.map(w ->"id: " + w.getId() +  "Name: " + w.getName() + 
-                              ", URL: " + w.getUrl() + 
-                              ", alexa: " + w.getAlexa() + 
-                              ", alexa: " + w.getCountry() 
-                            )
-                      .orElse("Website not found");
+        return website.map(w -> "id: " + w.getId() + " Name: " + w.getName() +
+                        ", URL: " + w.getUrl() +
+                        ", alexa: " + w.getAlexa() +
+                        ", country: " + w.getCountry())  // 修正 alexa 重复问题
+                .orElse("Website not found");
     }
-    
+
     public static class ApiResponse {
         private int statusCode;
         private String message;
@@ -48,20 +45,80 @@ public class UserController {
             this.data = data;
         }
 
-        public int getStatusCode() { return statusCode; }
-        public String getMessage() { return message; }
-        public List<Website> getData() { return data; }
+        public int getStatusCode() {
+            return statusCode;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public List<Website> getData() {
+            return data;
+        }
     }
-//http://localhost:8080/websites
+
+    // http://localhost:8080/websites
     @GetMapping("/websites")
     public ApiResponse getAllWebsites() {
-        List<Website> websites = websiteRepository.findAll();
-        System.out.println("Retrieved all websites: " + websites.size() + " records");
-        return new ApiResponse(200, "Success", websites);
+        try {
+            List<Website> websites = websiteRepository.findAll();
+            System.out.println("Retrieved all websites: " + websites.size() + " records");
+            return new ApiResponse(200, "Success", websites);
+        } catch (Exception e) {
+            System.out.println("Error retrieving all websites: " + e.getMessage());
+            return new ApiResponse(500, "Error retrieving all websites: " + e.getMessage(), null);
+        }
     }
-    
-    
-    
-    
-    
+
+    // 新增接口：添加一个网站
+    @PostMapping("/website")
+    public ApiResponse createWebsite(@RequestBody Website website) {
+        try {
+            Website savedWebsite = websiteRepository.save(website); // 此时 `id` 会自动生成
+            System.out.println("Created website with ID: " + savedWebsite.getId());
+            return new ApiResponse(201, "Website created successfully", Arrays.asList(savedWebsite));
+        } catch (Exception e) {
+            System.out.println("Error creating website: " + e.getMessage());
+            return new ApiResponse(500, "Error creating website: " + e.getMessage(), null);
+        }
+    }
+
+    // 新增接口：删除一个网站
+    @DeleteMapping("/website/{id}")
+    public ApiResponse deleteWebsite(@PathVariable Integer id) {
+        try {
+            websiteRepository.deleteById(id);
+            System.out.println("Deleted website with ID: " + id);
+            return new ApiResponse(200, "Website deleted successfully", null);
+        } catch (Exception e) {
+            System.out.println("Error deleting website with ID: " + id + ", Error: " + e.getMessage());
+            return new ApiResponse(500, "Error deleting website: " + e.getMessage(), null);
+        }
+    }
+
+    // 新增接口：编辑一个网站
+    @PutMapping("/website/{id}")
+    public ApiResponse updateWebsite(@PathVariable Integer id, @RequestBody Website website) {
+        try {
+            Optional<Website> optionalWebsite = websiteRepository.findById(id);
+            if (optionalWebsite.isPresent()) {
+                Website existingWebsite = optionalWebsite.get();
+                // 更新网站信息
+                existingWebsite.setName(website.getName());
+                existingWebsite.setUrl(website.getUrl());
+                existingWebsite.setAlexa(website.getAlexa());
+                existingWebsite.setCountry(website.getCountry());
+
+                Website updatedWebsite = websiteRepository.save(existingWebsite);
+                System.out.println("Updated website with ID: " + updatedWebsite.getId());
+                return new ApiResponse(200, "Website updated successfully", Arrays.asList(updatedWebsite));
+            } else {
+                return new ApiResponse(404, "Website not found", null);
+            }
+        } catch (Exception e) {
+            System.out.println("Error updating website with ID: " + id + ", Error: " + e.getMessage());
+            return new ApiResponse(500, "Error updating website: " + e.getMessage(), null);
+        }
+    }
 }

@@ -2,6 +2,9 @@ package com.example.demo;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+//使用 JPA 注解 @GeneratedValue 设置主键 id 为自动生成，并在 @GeneratedValue 中指定策略（例如 GenerationType.IDENTITY）：
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Table;
 
 @Entity
@@ -10,6 +13,7 @@ import javax.persistence.Table;
 public class Website {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // 自动生成 ID
     private Integer id;
 
     private String name;

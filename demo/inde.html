@@ -79,7 +79,7 @@
 
 </script>
 </html>-->
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
@@ -145,6 +145,200 @@
             app.innerHTML = `<ul>${listItems}</ul>`;
         })
         .catch(error => console.error('Error:', error));
+</script>
+
+</body>
+</html>-->
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网站列表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        li {
+            background: #fff;
+            margin: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            flex: 1 1 calc(33% - 40px); /* 每个列表项占用大约三分之一的宽度 */
+            box-sizing: border-box;
+        }
+        h3 {
+            margin: 0 0 10px;
+            font-size: 1.5em;
+        }
+        p {
+            margin: 5px 0;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- <h1>新增网站</h1> -->
+    <form id="websiteForm">
+        <label for="name">网站名称:</label>
+        <input type="text" id="name" name="name" required><br><br>
+        <label for="url">网站URL:</label>
+        <input type="text" id="url" name="url" required><br><br>
+        <label for="alexa">Alexa排名:</label>
+        <input type="number" id="alexa" name="alexa" required><br><br>
+        <label for="country">国家:</label>
+        <input type="text" id="country" name="country" required><br><br>
+        <button type="submit">提交</button>
+    </form>
+    <div id="result"></div>
+    <form id="editForm">
+        <input type="hidden" id="editId">
+        <label for="editName">网站名称:</label>
+        <input type="text" id="editName" name="editName" required><br><br>
+        <label for="editUrl">网站URL:</label>
+        <input type="text" id="editUrl" name="editUrl" required><br><br>
+        <label for="editAlexa">Alexa排名:</label>
+        <input type="number" id="editAlexa" name="editAlexa" required><br><br>
+        <label for="editCountry">国家:</label>
+        <input type="text" id="editCountry" name="editCountry" required><br><br>
+        <button type="submit">保存修改</button>
+        <button type="button" onclick="cancelEdit()">取消</button>
+    </form>
+<div id="app"></div>
+
+<script>
+window.onload = function() {
+    getWebsiteList();
+}
+
+document.getElementById('websiteForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    submitWebsiteForm();
+});
+
+function submitWebsiteForm() {
+    const formData = new FormData(document.getElementById('websiteForm'));
+    const websiteData = {
+        name: formData.get('name'),
+        url: formData.get('url'),
+        alexa: parseInt(formData.get('alexa')),
+        country: formData.get('country')
+    };
+
+    fetchRequest('http://localhost:8080/website', 'POST', websiteData)
+        .then(data => {
+            getWebsiteList();
+            document.getElementById('result').innerText = '网站添加成功: ' + JSON.stringify(data);
+        })
+        .catch(error => {
+            document.getElementById('result').innerText = '网站添加失败: ' + error;
+        });
+}
+
+function fetchRequest(url, method, data) {
+    return fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: data ? JSON.stringify(data) : null
+    })
+    .then(response => response.json());
+}
+
+function getWebsiteList() {
+    fetchRequest('http://localhost:8080/websites', 'GET', null)
+        .then(bar => {
+            let listItems = '';
+            bar.data.forEach(item => {
+                const name = item.name || '无名网站';
+                const country = item.country || '未知';
+                listItems += `
+                    <li>
+                        <h3>${name}</h3>
+                        <p>URL: <a href="${item.url}" target="_blank">${item.url}</a></p>
+                        <p>Alexa 排名: ${item.alexa}</p>
+                        <p>所在国家: ${country}</p>
+                        <button onclick="deleteWebsite(${item.id})">删除</button>
+                        <button onclick="editWebsite(${item.id}, '${item.name}', '${item.url}', ${item.alexa}, '${item.country}')">编辑</button>
+                    </li>
+                `;
+            });
+            document.getElementById('app').innerHTML = `<ul>${listItems}</ul>`;
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function deleteWebsite(id) {
+    if (confirm('确定要删除这个网站吗？')) {
+        fetchRequest(`http://localhost:8080/website/${id}`, 'DELETE', null)
+            .then(data => {
+                getWebsiteList();
+                document.getElementById('result').innerText = '网站删除成功: ' + JSON.stringify(data);
+            })
+            .catch(error => {
+                document.getElementById('result').innerText = '网站删除失败: ' + error;
+            });
+    }
+}
+
+function editWebsite(id, name, url, alexa, country) {
+    document.getElementById('editId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editUrl').value = url;
+    document.getElementById('editAlexa').value = alexa;
+    document.getElementById('editCountry').value = country;
+    document.getElementById('editForm').style.display = 'block';
+}
+
+document.getElementById('editForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const id = document.getElementById('editId').value;
+    const name = document.getElementById('editName').value;
+    const url = document.getElementById('editUrl').value;
+    const alexa = parseInt(document.getElementById('editAlexa').value);
+    const country = document.getElementById('editCountry').value;
+
+    const websiteData = {
+        name: name,
+        url: url,
+        alexa: alexa,
+        country: country
+    };
+
+    fetchRequest(`http://localhost:8080/website/${id}`, 'PUT', websiteData)
+        .then(data => {
+            getWebsiteList();
+            document.getElementById('editForm').style.display = 'none';
+            document.getElementById('result').innerText = '网站编辑成功: ' + JSON.stringify(data);
+        })
+        .catch(error => {
+            document.getElementById('result').innerText = '网站编辑失败: ' + error;
+        });
+});
+
+function cancelEdit() {
+    document.getElementById('editForm').style.display = 'none';
+}
 </script>
 
 </body>
