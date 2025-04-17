@@ -1,6 +1,9 @@
 package com.example.demo;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -59,17 +62,43 @@ public class UserController {
     }
 
     // http://localhost:8080/websites
+    // ... existing code ...
     @GetMapping("/websites")
-    public ApiResponse getAllWebsites() {
+    public ApiResponse getAllWebsites(@RequestParam(defaultValue = "0") int page,
+                                      @RequestParam(defaultValue = "5") int size,
+                                      @RequestParam(required = false) String name,
+                                      @RequestParam(required = false) String country,
+                                      @RequestParam(required = false) Integer alexa) {
         try {
-            List<Website> websites = websiteRepository.findAll();
-            System.out.println("Retrieved all websites: " + websites.size() + " records");
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Website> websitePage;
+            if (name != null && country != null && alexa != null) {
+                websitePage = websiteRepository.findByNameContainingAndCountryContainingAndAlexa(name, country, alexa, pageable);
+            } else if (name != null && country != null) {
+                websitePage = websiteRepository.findByNameContainingAndCountryContaining(name, country, pageable);
+            } else if (name != null && alexa != null) {
+                websitePage = websiteRepository.findByNameContainingAndAlexa(name, alexa, pageable);
+            } else if (country != null && alexa != null) {
+                websitePage = websiteRepository.findByCountryContainingAndAlexa(country, alexa, pageable);
+            } else if (name != null) {
+                websitePage = websiteRepository.findByNameContaining(name, pageable);
+            } else if (country != null) {
+                websitePage = websiteRepository.findByCountryContaining(country, pageable);
+            } else if (alexa != null) {
+                websitePage = websiteRepository.findByAlexa(alexa, pageable);
+            } else {
+                websitePage = websiteRepository.findAll(pageable);
+            }
+            List<Website> websites = websitePage.getContent();
+            System.out.println("Retrieved websites: " + websites.size() + " records on page " + page);
             return new ApiResponse(200, "Success", websites);
         } catch (Exception e) {
             System.out.println("Error retrieving all websites: " + e.getMessage());
             return new ApiResponse(500, "Error retrieving all websites: " + e.getMessage(), null);
         }
     }
+
+    // ... existing code ...
 
     // 新增接口：添加一个网站
     @PostMapping("/website")
