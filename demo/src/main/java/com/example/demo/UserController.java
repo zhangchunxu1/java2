@@ -6,6 +6,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+import com.opencsv.CSVWriter;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -125,7 +129,43 @@ public class UserController {
             return new ApiResponse(500, "Error deleting website: " + e.getMessage(), null);
         }
     }
+    // 新增导出接口
+    @GetMapping("/export/websites")
+    public void exportWebsites(HttpServletResponse response) throws IOException {
+        // 设置响应头
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"websites.csv\"");
 
+        // 获取输出流
+        OutputStream outputStream = response.getOutputStream();
+        CSVWriter writer = new CSVWriter(new java.io.OutputStreamWriter(outputStream));
+
+        // 写入 CSV 表头
+        String[] headers = {"ID", "Name", "URL", "Alexa", "Country"};
+        writer.writeNext(headers);
+
+        // 获取所有网站信息
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE);
+        Page<Website> websitePage = websiteRepository.findAll(pageable);
+        List<Website> websites = websitePage.getContent();
+
+        // 写入网站信息
+        for (Website website : websites) {
+            String[] row = {
+                    String.valueOf(website.getId()),
+                    website.getName(),
+                    website.getUrl(),
+                    String.valueOf(website.getAlexa()),
+                    website.getCountry()
+            };
+            writer.writeNext(row);
+        }
+
+        // 刷新并关闭资源
+        writer.flush();
+        writer.close();
+        outputStream.close();
+    }
     // 新增接口：编辑一个网站
     @PutMapping("/website/{id}")
     public ApiResponse updateWebsite(@PathVariable Integer id, @RequestBody Website website) {
@@ -150,4 +190,5 @@ public class UserController {
             return new ApiResponse(500, "Error updating website: " + e.getMessage(), null);
         }
     }
+
 }

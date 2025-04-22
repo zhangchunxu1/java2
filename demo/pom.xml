@@ -78,6 +78,24 @@
     </dependency>
 
     <!-- 你需要根据实际使用的数据库添加相应的驱动依赖 -->
+    <dependency>
+        <groupId>com.opencsv</groupId>
+        <artifactId>opencsv</artifactId>
+        <version>5.7.1</version>
+    </dependency>
+
+    <!-- Apache POI 核心依赖 -->
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi</artifactId>
+        <version>5.2.3</version>
+    </dependency>
+    <!-- Apache POI 处理 XLSX 格式的依赖 -->
+    <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>5.2.3</version>
+    </dependency>
 
 </dependencies>
 

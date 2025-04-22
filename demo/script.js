@@ -250,3 +250,32 @@ function clearAllInputs() {
     document.getElementById('editCountry').value = '';
     document.getElementById('editId').value = '';
 }
+
+function exportWebsites() {
+    // 假设后端服务运行在 http://localhost:8080
+    const apiUrl = 'http://localhost:8080/export/websites';
+
+    fetch(apiUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('网络响应异常');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // 创建一个临时的 URL
+            const url = window.URL.createObjectURL(blob);
+            // 创建一个 <a> 元素
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'websites.csv';
+            // 模拟点击 <a> 元素来触发下载
+            a.click();
+            // 释放临时 URL
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            console.error('导出失败:', error);
+            alert('导出失败，请稍后重试');
+        });
+}
