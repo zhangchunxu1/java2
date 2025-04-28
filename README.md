@@ -54,3 +54,11 @@ default-character-set=utf8 -->
 # yarn 安装地址 https://mirrors.huaweicloud.com/yarn/
 # funalshell 下载地址 https://www.hostbuf.com/ 连接linux服务器软件
 # vpn  稳连云.com
+<!-- github ping不同  
+powershell 管理员启动
+cd 到 C:\Windows\System32\drivers\etc
+//输入下方指令就能修改修改 hosts 文件 
+notepad hosts
+//文件下添加下方代码
+140.82.112.4 github.com
+ -->
