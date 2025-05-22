@@ -21,6 +21,56 @@ public class UserController {
     @Autowired
     private UserInterface userInterface;
 
+    // ... 已有代码 ...
+
+    @Autowired
+    private UserRepository userRepository; // 假设存在 UserRepository
+
+    // 登录接口
+    @PostMapping("/login")
+    public ApiResponse login(@RequestBody LoginRequest loginRequest) {
+        try {
+            Optional<User> userOptional = userRepository.findByUsernameAndPassword(loginRequest.getUsername(), loginRequest.getPassword());
+            if (userOptional.isPresent()) {
+                return new ApiResponse(200, "Login successful", null);
+            } else {
+                return new ApiResponse(401, "Invalid username or password", null);
+            }
+        } catch (Exception e) {
+            System.out.println("Error during login: " + e.getMessage());
+            return new ApiResponse(500, "Error during login: " + e.getMessage(), null);
+        }
+    }
+
+    // 登录请求实体类
+    public static class LoginRequest {
+        private String username;
+        private String password;
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+    }
+
+    // ... 已有代码 ...
+
+
+
+
+
+
     @Autowired
     private WebsiteRepository websiteRepository; // 添加一个 JPA 仓库，用于访问数据库
 // http://localhost:8080/user?userId=1&additionalInfo=2

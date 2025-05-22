@@ -46,3 +46,11 @@ INSERT INTO `websites` (`id`, `name`, `url`, `alexa`, `country`) VALUES
 ('3', '菜鸟教程', 'http://www.runoob.com', '5892', ''),
 ('4', '微博', 'http://weibo.com/', '20', 'CN'),
 ('5', 'Facebook', 'https://www.facebook.com/', '3', 'USA');
+
+
+-- Create the user table
+CREATE TABLE USER (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    PASSWORD VARCHAR(255) NOT NULL
+);

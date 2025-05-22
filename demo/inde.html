@@ -8,72 +8,119 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-<div id="search">
-    <label for="nameSearch">网站名称:</label>
-    <input type="text" id="nameSearch" placeholder="输入网站名称">
-    <label for="countrySearch">国家:</label>
-    <input type="text" id="countrySearch" placeholder="输入国家">
-    <label for="alexaSearch">Alexa 排名:</label>
-    <input type="number" id="alexaSearch" placeholder="输入 Alexa 排名">
-    <button onclick="searchWebsites()">查询</button>
-    <button onclick="clearAllInputs()">清空</button>
+<!-- 登录表单 -->
+<div id="loginForm" style="display: block;">
+    <h2>登录</h2>
+    <label for="loginUsername">用户名:</label>
+    <input type="text" id="loginUsername" placeholder="输入用户名"><br>
+    <label for="loginPassword">密码:</label>
+    <input type="password" id="loginPassword" placeholder="输入密码"><br>
+    <button onclick="login()">登录</button>
 </div>
-<!-- 新增按钮 -->
-<button id="addButton">新增网站</button>
-<!-- 新增导出按钮 -->
-<button onclick="exportWebsites()">导出网站数据</button>
+<!-- 将需要登录后显示的内容用一个 div 包裹，并初始隐藏 -->
+<div id="mainContent" style="display: none;">
+    <div id="search">
+        <label for="nameSearch">网站名称:</label>
+        <input type="text" id="nameSearch" placeholder="输入网站名称">
+        <label for="countrySearch">国家:</label>
+        <input type="text" id="countrySearch" placeholder="输入国家">
+        <label for="alexaSearch">Alexa 排名:</label>
+        <input type="number" id="alexaSearch" placeholder="输入 Alexa 排名">
+        <button onclick="searchWebsites()">查询</button>
+        <button onclick="clearAllInputs()">清空</button>
+    </div>
+    <!-- 新增按钮 -->
+    <button id="addButton">新增网站</button>
+    <!-- 新增导出按钮 -->
+    <button onclick="exportWebsites()">导出网站数据</button>
 
-<!-- 隐藏原有的新增表单 -->
-<form id="websiteForm" class="floating-form" style="display: none;">
-    <span class="close-btn" onclick="closeAddForm()">&times;</span>
-    <label for="name">网站名称:</label>
-    <input type="text" style="margin-top: 13px;" id="name" name="name" required><br>
-    <label for="url">网站URL:</label>
-    <input type="text" id="url" name="url" required><br>
-    <label for="alexa">Alexa排名:</label>
-    <input type="number" id="alexa" name="alexa" required><br>
-    <label for="country">国家:</label>
-    <input type="text" id="country" name="country" required><br>
-    <button type="submit">提交</button>
-</form>
-<div id="result"></div>
-<!-- 编辑表单 -->
-<form id="editForm" class="floating-form" style="display: none;">
-    <span class="close-btn" onclick="closeEditForm()">&times;</span>
-    <input type="hidden" id="editId">
-    <label for="editName">网站名称:</label>
-    <input type="text" style="margin-top: 13px;" id="editName" name="editName" required><br>
-    <label for="editUrl">网站URL:</label>
-    <input type="text" id="editUrl" name="editUrl" required><br>
-    <label for="editAlexa">Alexa排名:</label>
-    <input type="number" id="editAlexa" name="editAlexa" required><br>
-    <label for="editCountry">国家:</label>
-    <input type="text" id="editCountry" name="editCountry" required><br>
-    <button type="submit">保存修改</button>
-</form>
+    <!-- 隐藏原有的新增表单 -->
+    <form id="websiteForm" class="floating-form" style="display: none;">
+        <span class="close-btn" onclick="closeAddForm()">&times;</span>
+        <label for="name">网站名称:</label>
+        <input type="text" style="margin-top: 13px;" id="name" name="name" required><br>
+        <label for="url">网站URL:</label>
+        <input type="text" id="url" name="url" required><br>
+        <label for="alexa">Alexa排名:</label>
+        <input type="number" id="alexa" name="alexa" required><br>
+        <label for="country">国家:</label>
+        <input type="text" id="country" name="country" required><br>
+        <button type="submit">提交</button>
+    </form>
+    <div id="result"></div>
+    <!-- 编辑表单 -->
+    <form id="editForm" class="floating-form" style="display: none;">
+        <span class="close-btn" onclick="closeEditForm()">&times;</span>
+        <input type="hidden" id="editId">
+        <label for="editName">网站名称:</label>
+        <input type="text" style="margin-top: 13px;" id="editName" name="editName" required><br>
+        <label for="editUrl">网站URL:</label>
+        <input type="text" id="editUrl" name="editUrl" required><br>
+        <label for="editAlexa">Alexa排名:</label>
+        <input type="number" id="editAlexa" name="editAlexa" required><br>
+        <label for="editCountry">国家:</label>
+        <input type="text" id="editCountry" name="editCountry" required><br>
+        <button type="submit">保存修改</button>
+    </form>
 
-<div id="app">
-    <table>
-        <thead>
-        <tr>
-            <th>网站名称</th>
-            <th>网站URL</th>
-            <th>Alexa 排名</th>
-            <th>所在国家</th>
-            <th>操作</th>
-        </tr>
-        </thead>
-        <!-- 给 tbody 设置 id -->
-        <tbody id="websiteTableBody"></tbody>
-    </table>
-</div>
-<div id="pagination" style="text-align: center;margin-top: 15px;">
-    <button onclick="prevPage()">上一页</button>
-    <span id="pageInfo">第 1 页</span>
-    <button onclick="nextPage()">下一页</button>
+    <div id="app">
+        <table>
+            <thead>
+            <tr>
+                <th>网站名称</th>
+                <th>网站URL</th>
+                <th>Alexa 排名</th>
+                <th>所在国家</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <!-- 给 tbody 设置 id -->
+            <tbody id="websiteTableBody"></tbody>
+        </table>
+    </div>
+    <div id="pagination" style="text-align: center;margin-top: 15px;">
+        <button onclick="prevPage()">上一页</button>
+        <span id="pageInfo">第 1 页</span>
+        <button onclick="nextPage()">下一页</button>
+    </div>
 </div>
 <!-- 引入 JS 文件 -->
 <script src="script.js"></script>
+<script>
+    function login() {
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
+
+        // 修改为正确的端口
+        fetch('http://localhost:8080/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.statusCode === 200) {
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('mainContent').style.display = 'block';
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('登录出错:', error);
+                alert('登录时发生错误，请稍后重试');
+            });
+    }
+</script>
 </body>
 </html>
