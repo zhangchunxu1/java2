@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -21,24 +22,57 @@ public class UserController {
     @Autowired
     private UserInterface userInterface;
 
-    // ... 已有代码 ...
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
-    private UserRepository userRepository; // 假设存在 UserRepository
+    private JwtUtil jwtUtil;
 
-    // 登录接口
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+
+    // ==================== 登录注册相关 ====================
+
+    // 注册接口
+    @PostMapping("/register")
+    public ApiResponse register(@RequestBody RegisterRequest registerRequest) {
+        try {
+            // 检查用户名是否已存在
+            if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
+                return new ApiResponse(400, "用户名已存在", null);
+            }
+            // 创建新用户，密码加密存储
+            User user = new User();
+            user.setUsername(registerRequest.getUsername());
+            user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+            userRepository.save(user);
+            return new ApiResponse(200, "注册成功", null);
+        } catch (Exception e) {
+            System.out.println("Error during registration: " + e.getMessage());
+            return new ApiResponse(500, "注册失败: " + e.getMessage(), null);
+        }
+    }
+
+    // 登录接口 - 返回JWT Token
     @PostMapping("/login")
     public ApiResponse login(@RequestBody LoginRequest loginRequest) {
         try {
-            Optional<User> userOptional = userRepository.findByUsernameAndPassword(loginRequest.getUsername(), loginRequest.getPassword());
-            if (userOptional.isPresent()) {
-                return new ApiResponse(200, "Login successful", null);
+            Optional<User> userOptional = userRepository.findByUsername(loginRequest.getUsername());
+            if (!userOptional.isPresent()) {
+                return new ApiResponse(401, "用户名不存在", null);
+            }
+            User user = userOptional.get();
+            // 使用BCrypt验证密码
+            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+                // 生成JWT Token
+                String token = jwtUtil.generateToken(user.getUsername());
+                return new ApiResponse(200, "登录成功", null, token, user.getUsername());
             } else {
-                return new ApiResponse(401, "Invalid username or password", null);
+                return new ApiResponse(401, "密码错误", null);
             }
         } catch (Exception e) {
             System.out.println("Error during login: " + e.getMessage());
-            return new ApiResponse(500, "Error during login: " + e.getMessage(), null);
+            return new ApiResponse(500, "登录出错: " + e.getMessage(), null);
         }
     }
 
@@ -47,47 +81,44 @@ public class UserController {
         private String username;
         private String password;
 
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
     }
 
-    // ... 已有代码 ...
+    // 注册请求实体类
+    public static class RegisterRequest {
+        private String username;
+        private String password;
 
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
+    }
 
-
-
-
+    // ==================== 网站管理相关 ====================
 
     @Autowired
-    private WebsiteRepository websiteRepository; // 添加一个 JPA 仓库，用于访问数据库
-// http://localhost:8080/user?userId=1&additionalInfo=2
+    private WebsiteRepository websiteRepository;
+
+    // http://localhost:8080/user?userId=1&additionalInfo=2
     @GetMapping("/user")
     public String getUser(@RequestParam String userId, @RequestParam String additionalInfo) {
         return userInterface.getUserInfo(userId, additionalInfo);
     }
-// http://localhost:8080/website?id=1
+
+    // http://localhost:8080/website?id=1
     @GetMapping("/website")
-    public String getWebsite(@RequestParam Integer id) {  // 使用 Integer
+    public String getWebsite(@RequestParam Integer id) {
         System.out.println("Received ID: " + id);
-        Optional<Website> website = websiteRepository.findById(id);  // 修正拼写错误
+        Optional<Website> website = websiteRepository.findById(id);
         System.out.println("Database Query Result: " + website);
         return website.map(w -> "id: " + w.getId() + " Name: " + w.getName() +
                         ", URL: " + w.getUrl() +
                         ", alexa: " + w.getAlexa() +
-                        ", country: " + w.getCountry())  // 修正 alexa 重复问题
+                        ", country: " + w.getCountry())
                 .orElse("Website not found");
     }
 
@@ -95,28 +126,29 @@ public class UserController {
         private int statusCode;
         private String message;
         private List<Website> data;
+        private String token;
+        private String username;
 
         public ApiResponse(int statusCode, String message, List<Website> data) {
+            this(statusCode, message, data, null, null);
+        }
+
+        public ApiResponse(int statusCode, String message, List<Website> data, String token, String username) {
             this.statusCode = statusCode;
             this.message = message;
             this.data = data;
+            this.token = token;
+            this.username = username;
         }
 
-        public int getStatusCode() {
-            return statusCode;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public List<Website> getData() {
-            return data;
-        }
+        public int getStatusCode() { return statusCode; }
+        public String getMessage() { return message; }
+        public List<Website> getData() { return data; }
+        public String getToken() { return token; }
+        public String getUsername() { return username; }
     }
 
     // http://localhost:8080/websites
-    // ... existing code ...
     @GetMapping("/websites")
     public ApiResponse getAllWebsites(@RequestParam(defaultValue = "0") int page,
                                       @RequestParam(defaultValue = "5") int size,
@@ -152,13 +184,11 @@ public class UserController {
         }
     }
 
-    // ... existing code ...
-
     // 新增接口：添加一个网站
     @PostMapping("/website")
     public ApiResponse createWebsite(@RequestBody Website website) {
         try {
-            Website savedWebsite = websiteRepository.save(website); // 此时 `id` 会自动生成
+            Website savedWebsite = websiteRepository.save(website);
             System.out.println("Created website with ID: " + savedWebsite.getId());
             return new ApiResponse(201, "Website created successfully", Arrays.asList(savedWebsite));
         } catch (Exception e) {
@@ -167,7 +197,7 @@ public class UserController {
         }
     }
 
-    // 新增接口：删除一个网站
+    // 删除接口
     @DeleteMapping("/website/{id}")
     public ApiResponse deleteWebsite(@PathVariable Integer id) {
         try {
@@ -179,27 +209,19 @@ public class UserController {
             return new ApiResponse(500, "Error deleting website: " + e.getMessage(), null);
         }
     }
-    // 新增导出接口
+
+    // 导出接口
     @GetMapping("/export/websites")
     public void exportWebsites(HttpServletResponse response) throws IOException {
-        // 设置响应头
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=\"websites.csv\"");
-
-        // 获取输出流
         OutputStream outputStream = response.getOutputStream();
         CSVWriter writer = new CSVWriter(new java.io.OutputStreamWriter(outputStream));
-
-        // 写入 CSV 表头
         String[] headers = {"ID", "Name", "URL", "Alexa", "Country"};
         writer.writeNext(headers);
-
-        // 获取所有网站信息
         Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE);
         Page<Website> websitePage = websiteRepository.findAll(pageable);
         List<Website> websites = websitePage.getContent();
-
-        // 写入网站信息
         for (Website website : websites) {
             String[] row = {
                     String.valueOf(website.getId()),
@@ -210,25 +232,22 @@ public class UserController {
             };
             writer.writeNext(row);
         }
-
-        // 刷新并关闭资源
         writer.flush();
         writer.close();
         outputStream.close();
     }
-    // 新增接口：编辑一个网站
+
+    // 编辑接口
     @PutMapping("/website/{id}")
     public ApiResponse updateWebsite(@PathVariable Integer id, @RequestBody Website website) {
         try {
             Optional<Website> optionalWebsite = websiteRepository.findById(id);
             if (optionalWebsite.isPresent()) {
                 Website existingWebsite = optionalWebsite.get();
-                // 更新网站信息
                 existingWebsite.setName(website.getName());
                 existingWebsite.setUrl(website.getUrl());
                 existingWebsite.setAlexa(website.getAlexa());
                 existingWebsite.setCountry(website.getCountry());
-
                 Website updatedWebsite = websiteRepository.save(existingWebsite);
                 System.out.println("Updated website with ID: " + updatedWebsite.getId());
                 return new ApiResponse(200, "Website updated successfully", Arrays.asList(updatedWebsite));
@@ -240,5 +259,4 @@ public class UserController {
             return new ApiResponse(500, "Error updating website: " + e.getMessage(), null);
         }
     }
-
 }

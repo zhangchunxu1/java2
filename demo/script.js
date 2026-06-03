@@ -2,10 +2,12 @@
 const overlay = document.createElement('div');
 overlay.className = 'overlay';
 document.body.appendChild(overlay);
+
 let currentPage = 0;
 const pageSize = 5;
-window.onload = function() {
-    getWebsiteList();
+
+// 使用 addEventListener 避免覆盖其他 onload 事件
+window.addEventListener('load', function() {
     // 为新增按钮添加点击事件
     const addButton = document.getElementById('addButton');
     if (addButton) {
@@ -23,7 +25,6 @@ window.onload = function() {
         websiteForm.addEventListener('submit', function(event) {
             event.preventDefault();
             submitWebsiteForm();
-            // 提交后隐藏表单和遮罩层
             websiteForm.style.display = 'none';
             overlay.style.display = 'none';
         });
@@ -64,6 +65,37 @@ window.onload = function() {
                 });
         });
     }
+});
+
+// 统一请求方法，自动携带Token
+function fetchRequest(url, method, data) {
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+
+    // 从localStorage获取Token并加入请求头
+    const token = localStorage.getItem('token');
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    }
+
+    return fetch(url, {
+        method: method,
+        headers: headers,
+        body: data ? JSON.stringify(data) : null
+    })
+        .then(response => {
+            // 处理401未授权（Token过期或无效）
+            if (response.status === 401) {
+                alert('登录已过期，请重新登录');
+                logout();
+                throw new Error('Unauthorized');
+            }
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        });
 }
 
 function submitWebsiteForm() {
@@ -86,72 +118,74 @@ function submitWebsiteForm() {
                 }
             })
             .catch(error => {
-                const result = document.getElementById('result');
-                if (result) {
-                    result.innerText = '网站添加失败: ' + error;
+                if (error.message !== 'Unauthorized') {
+                    const result = document.getElementById('result');
+                    if (result) {
+                        result.innerText = '网站添加失败: ' + error;
+                    }
                 }
             });
     }
 }
 
-function fetchRequest(url, method, data) {
-    return fetch(url, {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: data ? JSON.stringify(data) : null
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        });
-}
-
 function getWebsiteList(name = '', country = '', alexa = '') {
     let url = `http://localhost:8080/websites?page=${currentPage}&size=${pageSize}`;
-    if (name) url += `&name=${name}`;
-    if (country) url += `&country=${country}`;
+    if (name) url += `&name=${encodeURIComponent(name)}`;
+    if (country) url += `&country=${encodeURIComponent(country)}`;
     if (alexa) url += `&alexa=${alexa}`;
 
     fetchRequest(url, 'GET', null)
         .then(bar => {
             let tableRows = '';
-            if (bar.data) {
+            if (bar.data && bar.data.length > 0) {
                 bar.data.forEach(item => {
-                    const name = item.name || '无名网站';
-                    const country = item.country || '未知';
+                    const itemName = item.name || '无名网站';
+                    const itemCountry = item.country || '未知';
+                    const itemUrl = (item.url || '').replace(/'/g, "\\'");
+                    const editParams = `${item.id}, '${itemName}', '${itemUrl}', ${item.alexa}, '${itemCountry}'`;
                     tableRows += `
                         <tr>
-                            <td>${name}</td>
+                            <td>${itemName}</td>
                             <td><a href="${item.url}" target="_blank">${item.url}</a></td>
                             <td>${item.alexa}</td>
-                            <td>${country}</td>
+                            <td>${itemCountry}</td>
                             <td>
                                 <button onclick="deleteWebsite(${item.id})">删除</button>
-                                <button onclick="editWebsite(${item.id}, '${item.name}', '${item.url}', ${item.alexa}, '${item.country}')">编辑</button>
+                                <button onclick="editWebsite(${editParams})">编辑</button>
                             </td>
                         </tr>
                     `;
                 });
+            } else {
+                // 无数据时显示提示行
+                tableRows = `<tr><td colspan="5" style="padding:30px;color:#999;text-align:center;">暂无数据，点击"新增网站"添加</td></tr>`;
             }
-            // 获取 tbody 元素并更新内容
+
             const tableBody = document.getElementById('websiteTableBody');
             if (tableBody) {
                 tableBody.innerHTML = tableRows;
             }
-            document.getElementById('pageInfo').innerText = `第 ${currentPage + 1} 页`;
+            const pageInfoEl = document.getElementById('pageInfo');
+            if (pageInfoEl) {
+                pageInfoEl.innerText = `第 ${currentPage + 1} 页`;
+            }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => {
+            if (error.message !== 'Unauthorized') {
+                console.error('Error:', error);
+                const tableBody = document.getElementById('websiteTableBody');
+                if (tableBody) {
+                    tableBody.innerHTML = `<tr><td colspan="5" style="padding:30px;color:#ff6b6b;text-align:center;">数据加载失败: ${error.message}</td></tr>`;
+                }
+            }
+        });
 }
 
 function searchWebsites() {
-    const name = document.getElementById('nameSearch').value;
-    const country = document.getElementById('countrySearch').value;
+    const name = document.getElementById('nameSearch') ? document.getElementById('nameSearch').value : '';
+    const country = document.getElementById('countrySearch') ? document.getElementById('countrySearch').value : '';
     const alexaInput = document.getElementById('alexaSearch');
-    const alexa = alexaInput.value.trim();
+    const alexa = alexaInput ? alexaInput.value.trim() : '';
     currentPage = 0;
     getWebsiteList(name, country, alexa);
 }
@@ -159,21 +193,13 @@ function searchWebsites() {
 function prevPage() {
     if (currentPage > 0) {
         currentPage--;
-        const name = document.getElementById('nameSearch').value;
-        const country = document.getElementById('countrySearch').value;
-        const alexaInput = document.getElementById('alexaSearch');
-        const alexa = alexaInput.value.trim();
-        getWebsiteList(name, country, alexa);
+        searchWebsites();
     }
 }
 
 function nextPage() {
     currentPage++;
-    const name = document.getElementById('nameSearch').value;
-    const country = document.getElementById('countrySearch').value;
-    const alexaInput = document.getElementById('alexaSearch');
-    const alexa = alexaInput.value.trim();
-    getWebsiteList(name, country, alexa);
+    searchWebsites();
 }
 
 function deleteWebsite(id) {
@@ -187,9 +213,11 @@ function deleteWebsite(id) {
                 }
             })
             .catch(error => {
-                const result = document.getElementById('result');
-                if (result) {
-                    result.innerText = '网站删除失败: ' + error;
+                if (error.message !== 'Unauthorized') {
+                    const result = document.getElementById('result');
+                    if (result) {
+                        result.innerText = '网站删除失败: ' + error;
+                    }
                 }
             });
     }
@@ -232,50 +260,56 @@ function closeEditForm() {
 }
 
 function clearAllInputs() {
-    // 清空搜索框
-    document.getElementById('nameSearch').value = '';
-    document.getElementById('countrySearch').value = '';
-    document.getElementById('alexaSearch').value = '';
+    const el = (id) => document.getElementById(id);
+    if (el('nameSearch')) el('nameSearch').value = '';
+    if (el('countrySearch')) el('countrySearch').value = '';
+    if (el('alexaSearch')) el('alexaSearch').value = '';
 
-    // 清空新增表单
-    document.getElementById('name').value = '';
-    document.getElementById('url').value = '';
-    document.getElementById('alexa').value = '';
-    document.getElementById('country').value = '';
+    if (el('name')) el('name').value = '';
+    if (el('url')) el('url').value = '';
+    if (el('alexa')) el('alexa').value = '';
+    if (el('country')) el('country').value = '';
 
-    // 清空编辑表单
-    document.getElementById('editName').value = '';
-    document.getElementById('editUrl').value = '';
-    document.getElementById('editAlexa').value = '';
-    document.getElementById('editCountry').value = '';
-    document.getElementById('editId').value = '';
+    if (el('editName')) el('editName').value = '';
+    if (el('editUrl')) el('editUrl').value = '';
+    if (el('editAlexa')) el('editAlexa').value = '';
+    if (el('editCountry')) el('editCountry').value = '';
+    if (el('editId')) el('editId').value = '';
 }
 
 function exportWebsites() {
-    // 假设后端服务运行在 http://localhost:8080
+    const token = localStorage.getItem('token');
     const apiUrl = 'http://localhost:8080/export/websites';
 
-    fetch(apiUrl)
+    const headers = {};
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    }
+
+    fetch(apiUrl, { headers: headers })
         .then(response => {
+            if (response.status === 401) {
+                alert('登录已过期，请重新登录');
+                logout();
+                throw new Error('Unauthorized');
+            }
             if (!response.ok) {
                 throw new Error('网络响应异常');
             }
             return response.blob();
         })
         .then(blob => {
-            // 创建一个临时的 URL
             const url = window.URL.createObjectURL(blob);
-            // 创建一个 <a> 元素
             const a = document.createElement('a');
             a.href = url;
             a.download = 'websites.csv';
-            // 模拟点击 <a> 元素来触发下载
             a.click();
-            // 释放临时 URL
             window.URL.revokeObjectURL(url);
         })
         .catch(error => {
-            console.error('导出失败:', error);
-            alert('导出失败，请稍后重试');
+            if (error.message !== 'Unauthorized') {
+                console.error('导出失败:', error);
+                alert('导出失败，请稍后重试');
+            }
         });
 }

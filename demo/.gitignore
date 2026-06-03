@@ -1,0 +1,23 @@
+# 编译输出
+target/
+*.class
+*.jar
+*.war
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 依赖
+!lib/**/src/**
+**/target/classes/**
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 环境配置
+.env
+local.properties
